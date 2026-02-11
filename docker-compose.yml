@@ -1,0 +1,17 @@
+services:
+  clickhouse:
+    build: ./
+    container_name: clickhouse-server
+    ports:
+      - "8123:8123" # HTTP interface
+      - "8443:8443" # HTTPS interface
+      - "9000:9000" # Native TCP interface
+    volumes:
+      - ./clickhouse_data:/var/lib/clickhouse
+      - ./clickhouse_config:/etc/clickhouse-server/config.d
+    ulimits:
+      nofile:
+        soft: 262144
+        hard: 262144
+    environment:
+      - CLICKHOUSE_SKIP_USER_SETUP=1
