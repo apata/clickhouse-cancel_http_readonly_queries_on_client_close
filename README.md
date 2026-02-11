@@ -12,7 +12,7 @@ docker compose up --build -d
 
 #### 1. Make a long-running **https** query with client side timeout
 ```sh
-curl -k -m 1 'https://localhost:8443/?readonly=1&cancel_http_readonly_queries_on_client_close=1&query=SELECT+count(*)+FROM+numbers(1000000000)+WHERE+sipHash64(number)+%25+1000000+%3D+0'
+curl -k -m 1 'https://localhost:8443/?cancel_http_readonly_queries_on_client_close=1&query=SELECT+count(*)+FROM+numbers(1000000000)+WHERE+sipHash64(number)+%25+1000000+%3D+0'
 ```
 
 This should timeout. If it does not, increase the number within `numbers(...)`.
