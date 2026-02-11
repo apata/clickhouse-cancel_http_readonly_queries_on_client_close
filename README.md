@@ -1,20 +1,31 @@
-# Clickhouse option cancel_http_readonly_queries_on_client_close
-
-## Intro
+# Minimal repro for Clickhouse option `cancel_http_readonly_queries_on_client_close`
 
 This is a minimal repro for showing that the option `cancel_http_readonly_queries_on_client_close` does not work with https queries.
 
 ## Setup
 
-- run `docker compose up --build -d`
+```sh
+docker compose up --build -d
+```
 
 ## Steps to reproduce
 
-- run `curl -k -m 1 'https://localhost:8443/?readonly=1&cancel_http_readonly_queries_on_client_close=1&query=SELECT+count(*)+FROM+numbers(1000000000)+WHERE+sipHash64(number)+%25+1000000+%3D+0'`
-  - this should timeout; if not, increase the number within `numbers(...)`
-- run `curl -m 1 'http://localhost:8123/?cancel_http_readonly_queries_on_client_close=1&query=SELECT+count(*)+FROM+numbers(1000000000)+WHERE+sipHash64(number)+%25+2000000+%3D+0'` 
-  - this should timeout; if not, increase the number within `numbers(...)`
-- run `docker compose exec clickhouse clickhouse-client "FROM system.query_log SELECT query_duration_ms, query, type, exception, exception_code, Settings, is_secure WHERE (query LIKE '%sipHash%') AND (query NOT LIKE '%like%') AND type > 1 ORDER BY event_time DESC LIMIT 2 FORMAT PrettyCompact"`
+#### 1. Make a long-running **https** query with client side timeout
+```sh
+curl -k -m 1 'https://localhost:8443/?readonly=1&cancel_http_readonly_queries_on_client_close=1&query=SELECT+count(*)+FROM+numbers(1000000000)+WHERE+sipHash64(number)+%25+1000000+%3D+0'
+```
+
+This should timeout. If it does not, increase the number within `numbers(...)`.
+
+#### 2. Make a long-running http **query** with client side timeout 
+```sh 
+curl -m 1 'http://localhost:8123/?cancel_http_readonly_queries_on_client_close=1&query=SELECT+count(*)+FROM+numbers(1000000000)+WHERE+sipHash64(number)+%25+2000000+%3D+0'
+```
+
+#### 3. Check the queries in `system.query_log` table
+```sh
+docker compose exec clickhouse clickhouse-client "FROM system.query_log SELECT query_duration_ms, query, type, exception, exception_code, Settings, is_secure WHERE (query LIKE '%sipHash%') AND (query NOT LIKE '%like%') AND type > 1 ORDER BY event_time DESC LIMIT 2 FORMAT PrettyCompact"
+```
 
 ## Expected result
 
